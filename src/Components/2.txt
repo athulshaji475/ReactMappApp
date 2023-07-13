@@ -1,0 +1,80 @@
+import React, { useRef, useState } from 'react';
+import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
+
+const containerStyle = {
+  width: '400px',
+  height: '400px'
+};
+
+const center = {
+  lat: -3.745,
+  lng: -38.523
+};
+
+function App() {
+  const mapRef = useRef(null);
+  const [locations, setLocations] = useState([]);
+  const [apiLoaded, setApiLoaded] = useState(false);
+
+  const handleMapClick = (event) => {
+    const clickedLocation = {
+      lat: event.latLng.lat(),
+      lng: event.latLng.lng()
+    };
+
+    setLocations((prevLocations) => [...prevLocations, clickedLocation]);
+  };
+
+  const calculatePolygonArea = () => {
+    if (!apiLoaded) {
+      console.log('Google Maps API is still loading. Please wait.');
+      return;
+    }
+
+    if (locations.length < 3) {
+      console.log('At least 3 locations are required to calculate the area.');
+      return;
+    }
+
+    const googleMaps = window.google.maps;
+
+    // Ensure the geometry library is loaded
+    const geometry = new googleMaps.geometry();
+
+    const polygonPath = locations.map(location => new googleMaps.LatLng(location.lat, location.lng));
+    const polygon = new googleMaps.Polygon({ paths: polygonPath });
+
+    const area = geometry.spherical.computeArea(polygon.getPath());
+    console.log('Polygon area:', area);
+  };
+
+  const handleLoad = () => {
+    setApiLoaded(true);
+  };
+
+  return (
+    <div>
+      <LoadScript
+        googleMapsApiKey="YOUR_API_KEY"
+        libraries={['geometry']}
+        onLoad={handleLoad}
+      >
+        <GoogleMap
+          ref={mapRef}
+          mapContainerStyle={containerStyle}
+          center={center}
+          zoom={10}
+          onClick={handleMapClick}
+        >
+          {locations.map((location, index) => (
+            <Marker key={index} position={location} />
+          ))}
+        </GoogleMap>
+      </LoadScript>
+
+      <button onClick={calculatePolygonArea}>Calculate Area</button>
+    </div>
+  );
+}
+
+export default App;
